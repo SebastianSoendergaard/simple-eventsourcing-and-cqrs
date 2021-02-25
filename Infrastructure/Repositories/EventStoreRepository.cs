@@ -1,14 +1,13 @@
-﻿using Dapper;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Dapper;
 using Infrastructure.Exceptions;
 using Infrastructure.Factories;
 using Infrastructure.Model;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Tactical.DDD;
 
 namespace Infrastructure.Repositories
@@ -85,6 +84,21 @@ namespace Infrastructure.Repositories
                 await connection.ExecuteAsync(query, listOfEvents);
             }
 
+        }
+
+        public Task<IReadOnlyCollection<(IDomainEvent Event, int Index)>> GetAllEventsAsync(int startIndex, int max)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IReadOnlyCollection<(IDomainEvent Event, int Index)>> GetEventsByAggregateNamesAsync(int startIndex, int max, params string[] aggregateNames)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IReadOnlyCollection<(IDomainEvent Event, int Index)>> GetEventsByEventNamesAsync(int startIndex, int max, params string[] eventNames)
+        {
+            throw new NotImplementedException();
         }
     }
 }
