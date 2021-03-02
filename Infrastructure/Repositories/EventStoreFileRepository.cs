@@ -57,6 +57,20 @@ namespace Infrastructure.Repositories
             await Task.CompletedTask;
         }
 
+        public async Task DeleteAsync(IEntityId aggregateRootId)
+        {
+            var aggregateId = $";{aggregateRootId?.ToString()};";
+
+            lock (_filepath)
+            {
+                var lines = File.ReadAllLines(_filepath);
+                var filteredLines = lines.Where(l => !l.Contains(aggregateId));
+                File.WriteAllLines(_filepath, filteredLines);
+            }
+
+            await Task.CompletedTask;
+        }
+
         public async Task<IReadOnlyCollection<IDomainEvent>> LoadAsync(IEntityId aggregateRootId)
         {
             var aggregateId = aggregateRootId?.ToString() ?? throw new AggregateRootNotProvidedException("AggregateRootId cannot be null");

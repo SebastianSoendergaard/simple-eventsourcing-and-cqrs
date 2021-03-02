@@ -100,5 +100,10 @@ namespace Infrastructure.Repositories
         {
             throw new NotImplementedException();
         }
+
+        public Task DeleteAsync(IEntityId aggregateRootId)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

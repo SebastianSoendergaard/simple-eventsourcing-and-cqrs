@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 using RestAPI.Model;
 using RestAPI.Services;
 using Swashbuckle.Swagger.Annotations;
-using System.Threading.Tasks;
 
 namespace RestAPI.Controllers
 {
@@ -11,15 +11,14 @@ namespace RestAPI.Controllers
     public class PersonController : ControllerBase
     {
 
-        private readonly PersonService _personService;
+        private readonly IPersonService _personService;
 
 
-        public PersonController(PersonService personService)
+        public PersonController(IPersonService personService)
         {
             _personService = personService;
         }
  
-
         /// <summary>
         /// Creates new person Aggregate using first and last name as parameters
         /// Person will be saved as stream of events in event store
@@ -46,7 +45,7 @@ namespace RestAPI.Controllers
         [SwaggerResponse(System.Net.HttpStatusCode.OK, Type = typeof(PersonDto))]
         public async Task<PersonDto> GetPerson([FromQuery]string personId)
         {
-            return await _personService.GetPerson(personId);
+            return await _personService.GetPerson(new Core.Person.PersonId(personId));
         }
 
         /// <summary>
@@ -64,6 +63,21 @@ namespace RestAPI.Controllers
         {
             await _personService.UpdatePersonAddress(new Core.Person.PersonId(personId),
                 address.City, address.Country, address.Street, address.ZipCode);
+            Ok();
+        }
+
+        /// <summary>
+        /// Updates person address. New address is added as an event in event store
+        /// </summary>
+        /// <param name="personId"></param>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("deletePerson")]
+        [SwaggerResponse(System.Net.HttpStatusCode.OK)]
+        public async Task DeletePerson([FromQuery] string personId, [FromQuery] string reason)
+        {
+            await _personService.DeletePerson(new Core.Person.PersonId(personId), reason);
             Ok();
         }
     }

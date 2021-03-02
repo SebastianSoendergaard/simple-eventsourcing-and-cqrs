@@ -30,7 +30,7 @@ namespace RestAPI
             //services.AddSingleton<ISqlConnectionFactory>(new SqlConnectionFactory(Configuration.GetConnectionString("EventStoreDatabase")));
             //services.AddTransient<IEventStore, EventStoreRepository>();
             services.AddTransient<IPersonRepository, PersonRepository>();
-            services.AddTransient<PersonService, PersonService>();
+            services.AddTransient<IPersonService, PersonService>();
             services.AddControllers();
             
             services.AddSwaggerGen(c =>

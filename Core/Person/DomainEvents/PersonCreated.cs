@@ -1,24 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Tactical.DDD;
-
-namespace Core.Person.DomainEvents
+﻿namespace Core.Person.DomainEvents
 {
     public class PersonCreated : DomainEvent
     {
         public string PersonId { get; }
-        public string FirstName { get; }
-        public string LastName { get; }
+        public string PersonPrivateDataId { get; }
 
-        public PersonCreated(
-            string personId, 
-            string firstName, 
-            string lastName)
+        public PersonCreated(string personId, string personPrivateDataId)
         {
             PersonId = personId;
-            FirstName = firstName;
-            LastName = lastName;
+            PersonPrivateDataId = personPrivateDataId;
         }
     }
 }

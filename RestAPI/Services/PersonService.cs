@@ -1,7 +1,7 @@
-﻿using Core.Person;
+﻿using System.Threading.Tasks;
+using Core.Person;
 using Core.Person.Repositories;
 using RestAPI.Model;
-using System.Threading.Tasks;
 
 namespace RestAPI.Services
 {
@@ -20,9 +20,9 @@ namespace RestAPI.Services
             return pid;
         }
 
-        public async Task<PersonDto> GetPerson(string personId)
+        public async Task<PersonDto> GetPerson(PersonId personId)
         {
-            var person = await _personRepository.GetPerson(personId);
+            var person = await _personRepository.GetPerson(personId.ToString());
             
             if (person == null) return new PersonDto(); // throw not found exception
 
@@ -31,7 +31,8 @@ namespace RestAPI.Services
                 FirstName = person.FirstName,
                 LastName = person.LastName,
                 PersonId = person.Id.ToString(),
-                Address = person.PersonAddress!=null ? new AddressDto()
+                IdDeleted = person.IsDeleted,
+                Address = person.PersonAddress != null ? new AddressDto()
                 {
                     City = person.PersonAddress?.City,
                     Country = person.PersonAddress?.Country,
@@ -49,6 +50,16 @@ namespace RestAPI.Services
             if (person == null) return; // throw person not found exception
 
             person.ChangePersonAddress(street, country, zipcode, city);
+            await _personRepository.SavePersonAsync(person);
+        }
+
+        public async Task DeletePerson(PersonId personId, string reason)
+        {
+            var person = await _personRepository.GetPerson(personId.ToString());
+
+            if (person == null) return; // throw person not found exception
+
+            person.DeletePerson(reason);
             await _personRepository.SavePersonAsync(person);
         }
     }
