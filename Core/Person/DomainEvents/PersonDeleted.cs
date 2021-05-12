@@ -1,4 +1,6 @@
-﻿namespace Core.Person.DomainEvents
+﻿using Core.Common.DomainEvents;
+
+namespace Core.Person.DomainEvents
 {
     public class PersonDeleted : DomainEvent
     {
@@ -8,7 +10,5 @@
         {
             Reason = reason;
         }
-
-
     }
 }

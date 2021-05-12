@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Tactical.DDD;
+﻿using System.Collections.Generic;
+using Framework.DDD;
 
 namespace Core.Person
 {

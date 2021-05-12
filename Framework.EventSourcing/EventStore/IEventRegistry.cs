@@ -1,7 +1,6 @@
 ﻿using System;
-using Tactical.DDD;
 
-namespace Infrastructure.Repositories
+namespace Framework.DDD.EventStore
 {
     public interface IEventRegistry
     {

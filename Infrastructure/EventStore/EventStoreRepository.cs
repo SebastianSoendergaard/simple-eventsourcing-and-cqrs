@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Core.Exceptions;
 using Dapper;
-using Infrastructure.Exceptions;
+using Framework.DDD;
+using Framework.DDD.EventStore;
 using Infrastructure.Factories;
 using Infrastructure.Model;
 using Newtonsoft.Json;
-using Tactical.DDD;
 
-namespace Infrastructure.Repositories
+namespace Infrastructure.EventStore
 {
     public class EventStoreRepository : IEventStore
     {
@@ -36,7 +37,7 @@ namespace Infrastructure.Repositories
 
         public async Task<IReadOnlyCollection<IDomainEvent>> LoadAsync(IEntityId aggregateRootId)
         {
-            if (aggregateRootId == null) throw new AggregateRootNotProvidedException("AggregateRootId cannot be null");
+            if (aggregateRootId == null) throw new ValidationException("AggregateRootId cannot be null");
 
             var query = new StringBuilder($@"SELECT {EventStoreListOfColumnsSelect} FROM {EventStoreTableName}");
             query.Append(" WHERE [AggregateId] = @AggregateId ");
@@ -84,21 +85,6 @@ namespace Infrastructure.Repositories
                 await connection.ExecuteAsync(query, listOfEvents);
             }
 
-        }
-
-        public Task<IReadOnlyCollection<(IDomainEvent Event, int Index)>> GetAllEventsAsync(int startIndex, int max)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IReadOnlyCollection<(IDomainEvent Event, int Index)>> GetEventsByAggregateNamesAsync(int startIndex, int max, params string[] aggregateNames)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IReadOnlyCollection<(IDomainEvent Event, int Index)>> GetEventsByEventNamesAsync(int startIndex, int max, params string[] eventNames)
-        {
-            throw new NotImplementedException();
         }
 
         public Task DeleteAsync(IEntityId aggregateRootId)

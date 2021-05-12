@@ -1,7 +1,7 @@
 ﻿using System;
-using Tactical.DDD;
+using Framework.DDD;
 
-namespace Core.Person.DomainEvents
+namespace Core.Common.DomainEvents
 {
     public class DomainEvent : IDomainEvent
     {

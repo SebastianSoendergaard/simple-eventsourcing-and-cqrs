@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Infrastructure.Exceptions;
+using Core.Exceptions;
+using Framework.DDD;
+using Framework.DDD.EventStore;
 using Infrastructure.Model;
 using Newtonsoft.Json;
-using Tactical.DDD;
 
-namespace Infrastructure.Repositories
+namespace Infrastructure.EventStore
 {
-    public class EventStoreFileRepository : IEventStore
+    public class EventStoreFileRepository : IEventStore, IEventPublisher
     {
         private readonly string _filepath;
         private readonly IEventRegistry _eventRegistry;
@@ -19,6 +20,8 @@ namespace Infrastructure.Repositories
             TypeNameHandling = TypeNameHandling.None,
             NullValueHandling = NullValueHandling.Ignore
         };
+
+        public event EventHandler<StoredEvent> EventStored;
 
         public EventStoreFileRepository(string filepath, IEventRegistry eventRegistry)
         {
@@ -29,6 +32,8 @@ namespace Infrastructure.Repositories
         public async Task SaveAsync(IEntityId aggregateRootId, int originatingVersion, IReadOnlyCollection<IDomainEvent> events, string aggregateName = "Aggregate Name")
         {
             if (events.Count == 0) return;
+
+            var eventsToPublish = new List<StoredEvent>();
 
             lock (_filepath)
             {
@@ -41,18 +46,28 @@ namespace Infrastructure.Repositories
 
                 if (originatingVersion != currentVersion)
                 {
-                    throw new InvalidOperationException("Concurrent modification");
+                    throw new ValidationException("Concurrent modification");
                 }
 
-                var lines = events.Select(e => 
+                var lines = new List<string>();
+
+                foreach (var evt in events)
                 {
-                    var eventName = _eventRegistry.GetEventName(e);
-                    var data = SerializeEvent(e);
-                    return $"{++currentIndex};{aggregateId};{aggregateName};{++originatingVersion};{e.CreatedAt.ToString("o")};{Guid.NewGuid()};{eventName};{data}";
-                });
+                    var eventName = _eventRegistry.GetEventName(evt);
+                    var data = SerializeEvent(evt);
+                    lines.Add($"{++currentIndex};{aggregateId};{aggregateName};{++originatingVersion};{evt.CreatedAt.ToString("o")};{Guid.NewGuid()};{eventName};{data}");
+                    eventsToPublish.Add(new StoredEvent(currentIndex, aggregateName, eventName, aggregateId, evt));
+                }
 
                 File.AppendAllLines(_filepath, lines);
             }
+
+            // Publish events as fire and forget
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(5000); // Add small delay to provoke eventually consistency 
+                eventsToPublish.ForEach(e => EventStored?.Invoke(this, e));
+            });
 
             await Task.CompletedTask;
         }
@@ -73,7 +88,7 @@ namespace Infrastructure.Repositories
 
         public async Task<IReadOnlyCollection<IDomainEvent>> LoadAsync(IEntityId aggregateRootId)
         {
-            var aggregateId = aggregateRootId?.ToString() ?? throw new AggregateRootNotProvidedException("AggregateRootId cannot be null");
+            var aggregateId = aggregateRootId?.ToString() ?? throw new ValidationException("AggregateRootId cannot be null");
 
             var events = LoadAllEvents().Where(e => e.AggregateId == aggregateId)
                                         .OrderBy(e => e.Version)
@@ -84,35 +99,35 @@ namespace Infrastructure.Repositories
             return await Task.FromResult(events);
         }
 
-        public async Task<IReadOnlyCollection<(IDomainEvent Event, int Index)>> GetAllEventsAsync(int startIndex, int max)
+        public async Task<IReadOnlyCollection<StoredEvent>> GetAllEventsAsync(int startIndex, int max)
         {
             var events = LoadAllEvents().Where(e => e.Sequence >= startIndex)
                                         .Take(max)
-                                        .Select(e => (DeserializeEvent(e.Name, e.Data), e.Sequence))
+                                        .Select(e => new StoredEvent(e.Sequence, e.Aggregate, e.Name, e.AggregateId, DeserializeEvent(e.Name, e.Data)))
                                         .ToList()
                                         .AsReadOnly();
 
             return await Task.FromResult(events);
         }
 
-        public async Task<IReadOnlyCollection<(IDomainEvent Event, int Index)>> GetEventsByAggregateNamesAsync(int startIndex, int max, params string[] aggregateNames)
+        public async Task<IReadOnlyCollection<StoredEvent>> GetEventsByAggregateNamesAsync(int startIndex, int max, params string[] aggregateNames)
         {
             var events = LoadAllEvents().Where(e => e.Sequence >= startIndex)
                                         .Where(e => aggregateNames.Contains(e.Aggregate))
                                         .Take(max)
-                                        .Select(e => (DeserializeEvent(e.Name, e.Data), e.Sequence))
+                                        .Select(e => new StoredEvent(e.Sequence, e.Aggregate, e.Name, e.AggregateId, DeserializeEvent(e.Name, e.Data)))
                                         .ToList()
                                         .AsReadOnly();
 
             return await Task.FromResult(events);
         }
 
-        public async Task<IReadOnlyCollection<(IDomainEvent Event, int Index)>> GetEventsByEventNamesAsync(int startIndex, int max, params string[] eventNames)
+        public async Task<IReadOnlyCollection<StoredEvent>> GetEventsByEventNamesAsync(int startIndex, int max, params string[] eventNames)
         {
             var events = LoadAllEvents().Where(e => e.Sequence >= startIndex)
                                         .Where(e => eventNames.Contains(e.Name))
                                         .Take(max)
-                                        .Select(e => (DeserializeEvent(e.Name, e.Data), e.Sequence))
+                                        .Select(e => new StoredEvent(e.Sequence, e.Aggregate, e.Name, e.AggregateId, DeserializeEvent(e.Name, e.Data)))
                                         .ToList()
                                         .AsReadOnly();
 

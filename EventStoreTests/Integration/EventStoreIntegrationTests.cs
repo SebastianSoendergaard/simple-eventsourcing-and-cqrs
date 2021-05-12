@@ -1,9 +1,10 @@
-﻿using Core.Person;
+﻿using System.Threading.Tasks;
+using Core.Person;
 using EventStoreTests.Infrastructure;
+using Framework.DDD.EventStore;
+using Infrastructure.EventStore;
 using Infrastructure.Factories;
-using Infrastructure.Repositories;
 using NUnit.Framework;
-using System.Threading.Tasks;
 
 namespace EventStoreTests.Integration
 {
@@ -26,7 +27,7 @@ namespace EventStoreTests.Integration
 
             var personAggregate = Person.CreateNewPerson("Chuck", "Norris");
 
-            await _eventStore.SaveAsync(personId,personAggregate.Version, personAggregate.DomainEvents, "PersonAggregate");
+            await _eventStore.SaveAsync(personId, personAggregate.Version, personAggregate.DomainEvents, "PersonAggregate");
             
             var results = await _eventStore.LoadAsync(personId);
 

@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Core.Person;
 using Core.Person.Repositories;
+using Framework.DDD.EventStore;
 
 namespace Infrastructure.Repositories
 {
@@ -12,9 +13,9 @@ namespace Infrastructure.Repositories
             _eventStore = eventStore;
         }
 
-        public async Task<Person> GetPerson(string id)
+        public async Task<Person> GetPerson(PersonId id)
         {
-            var personEvents = await _eventStore.LoadAsync(new PersonId(id));
+            var personEvents = await _eventStore.LoadAsync(id);
             var person = new Person(personEvents);
             if (person.PersonPrivateDataId != null)
             {

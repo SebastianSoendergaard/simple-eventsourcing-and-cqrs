@@ -1,19 +1,22 @@
 ﻿using System.Collections.Generic;
+using Core.Exceptions;
 using Core.Person.DomainEvents;
-using Tactical.DDD;
+using Framework.DDD;
 
 namespace Core.Person
 {
-    public class Person: Tactical.DDD.EventSourcing.AggregateRoot<PersonId>
+    public class Person: Framework.DDD.EventStore.AggregateRoot<PersonId>
     {
         public override PersonId Id { get; protected set; }
         public PersonPrivateDataId PersonPrivateDataId { get; private set; }
-        public bool IsDeleted { get; private set; }
+        public bool IsDeleted { get { return privateData == null; } }
+        public string DeleteReason { get; private set; }
 
+        // Private data
         public string FirstName { get { return privateData?.FirstName ?? ""; } }
         public string LastName { get { return privateData?.LastName ?? ""; } }
         public Address PersonAddress { get { return privateData?.PersonAddress; } }
-        public string DeleteReason { get; set; }
+        public string PhoneNumber { get { return privateData?.PhoneNumber ?? ""; } }
 
         private PersonPrivateData privateData;
 
@@ -21,26 +24,35 @@ namespace Core.Person
         {
         }
 
-        private Person(string firstName, string lastName)
+        private Person(PersonId personId, string firstName, string lastName)
         {
-            privateData = PersonPrivateData.Create(firstName, lastName);
+            privateData = PersonPrivateData.Create(personId, firstName, lastName);
             PersonPrivateDataId = privateData.Id;
         }
 
         public static Person CreateNewPerson(string firstName, string lastName)
         {
-            var person = new Person(firstName, lastName);
-            person.Apply(new PersonCreated(new PersonId().ToString(), person.PersonPrivateDataId.ToString()));
+            var personId = new PersonId();
+            var person = new Person(personId, firstName, lastName);
+            person.Apply(new PersonCreated(personId.ToString(), person.PersonPrivateDataId.ToString()));
             return person;
         }
 
         public void ChangePersonAddress(string street,string country, string zipCode, string city)
         {
+            if (privateData == null) throw new NotFoundException("Person can not be changed as it has been deleted");
             privateData.ChangePersonAddress(street, country, zipCode, city);
+        }
+
+        public void ChangePhoneNumber(string phoneNumber)
+        {
+            if (privateData == null) throw new NotFoundException("Person can not be changed as it has been deleted");
+            privateData.ChangePhoneNumber(phoneNumber);
         }
 
         public void DeletePerson(string reason)
         {
+            privateData?.PrepareDelete();
             Apply(new PersonDeleted(reason));
         }
 
@@ -54,16 +66,15 @@ namespace Core.Person
             return privateData;
         }
 
-        public void On(PersonCreated @event)
+        public void On(PersonCreated evt)
         {
-            Id = new PersonId(@event.PersonId);
-            PersonPrivateDataId = new PersonPrivateDataId(@event.PersonPrivateDataId);
+            Id = new PersonId(evt.PersonId);
+            PersonPrivateDataId = new PersonPrivateDataId(evt.PersonPrivateDataId);
         }
 
-        public void On(PersonDeleted @event)
+        public void On(PersonDeleted evt)
         {
-            DeleteReason = @event.Reason;
-            IsDeleted = true;
+            DeleteReason = evt.Reason;
             privateData = null;
         }
     }

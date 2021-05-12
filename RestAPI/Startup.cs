@@ -1,5 +1,9 @@
-using Core.Person.DomainEvents;
+using Application.Person.Projections;
+using Application.Person.Services;
+using Core.Common.DomainEvents;
 using Core.Person.Repositories;
+using Framework.DDD.EventStore;
+using Infrastructure.EventStore;
 using Infrastructure.Repositories;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -7,7 +11,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
-using RestAPI.Services;
 
 namespace RestAPI
 {
@@ -24,15 +27,18 @@ namespace RestAPI
         public void ConfigureServices(IServiceCollection services)
         {
             var eventRegistry = new EventRegistry(typeof(DomainEvent));
+            var eventStore = new EventStoreFileRepository(@"C:\temp\eventstore.csv", eventRegistry);
 
-            services.AddSingleton(eventRegistry);
-            services.AddSingleton<IEventStore>(new EventStoreFileRepository(@"C:\temp\eventstore.csv", eventRegistry));
-            //services.AddSingleton<ISqlConnectionFactory>(new SqlConnectionFactory(Configuration.GetConnectionString("EventStoreDatabase")));
-            //services.AddTransient<IEventStore, EventStoreRepository>();
+            services.AddSingleton<IEventStore>(eventStore);
+            services.AddSingleton<IEventPublisher>(eventStore);
+
             services.AddTransient<IPersonRepository, PersonRepository>();
             services.AddTransient<IPersonService, PersonService>();
+            services.AddHostedService<PersonEventService>();
+            services.AddSingleton<UniquePersonProjection>();
+            services.AddSingleton<PersonListProjection>();
+
             services.AddControllers();
-            
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });

@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Tactical.DDD;
 
-namespace Infrastructure.Repositories
+namespace Framework.DDD.EventStore
 {
     public class EventRegistry : IEventRegistry
     {
@@ -18,13 +17,6 @@ namespace Infrastructure.Repositories
                                 .Where(t => t.IsSubclassOf(eventBaseType));
 
             eventNameToType = types.ToDictionary(t => t.Name);
-
-            //foreach (Type type in
-            //    Assembly.GetAssembly(eventBaseType).GetTypes()
-            //    .Where(myType => myType.IsClass && !myType.IsAbstract && myType.IsSubclassOf(eventBaseType)))
-            //{
-            //    objects.Add((T)Activator.CreateInstance(type, constructorArgs));
-            //}
         }
 
         public Type GetEventType(string eventName)

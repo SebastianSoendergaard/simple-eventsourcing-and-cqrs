@@ -1,5 +1,5 @@
 ﻿using System;
-using Tactical.DDD;
+using Framework.DDD;
 
 namespace Core.Person
 {
