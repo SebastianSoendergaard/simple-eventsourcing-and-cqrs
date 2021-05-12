@@ -52,6 +52,7 @@ namespace RestAPI.Controllers
                 PersonId = p.PersonId,
                 FirstName = p.FirstName,
                 LastName = p.LastName,
+                PhoneNumber = p.PhoneNumber,
                 IdDeleted = p.IsDeleted,
                 DeleteReason = p.DeleteReason
             });
@@ -117,7 +118,7 @@ namespace RestAPI.Controllers
         [SwaggerResponse(System.Net.HttpStatusCode.OK)]
         public async Task UpdatePhoneNumber(
             [FromQuery] string personId,
-            [FromBody] string phoneNumber)
+            [FromForm] string phoneNumber)
         {
             await _personService.UpdatePhoneNumber(new Core.Person.PersonId(personId), phoneNumber);
             Ok();

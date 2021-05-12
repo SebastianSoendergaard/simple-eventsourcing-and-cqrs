@@ -8,17 +8,17 @@ namespace Core.Person
     public class Person: Framework.DDD.EventStore.AggregateRoot<PersonId>
     {
         public override PersonId Id { get; protected set; }
-        public PersonPrivateDataId PersonPrivateDataId { get; private set; }
+        public PrivateDataId PrivateDataId { get; private set; }
         public bool IsDeleted { get { return privateData == null; } }
         public string DeleteReason { get; private set; }
 
         // Private data
-        public string FirstName { get { return privateData?.FirstName ?? ""; } }
-        public string LastName { get { return privateData?.LastName ?? ""; } }
-        public Address PersonAddress { get { return privateData?.PersonAddress; } }
-        public string PhoneNumber { get { return privateData?.PhoneNumber ?? ""; } }
+        public string FirstName { get { return privateData?.FirstName; } }
+        public string LastName { get { return privateData?.LastName; } }
+        public Address PersonAddress { get { return privateData?.Address; } }
+        public string PhoneNumber { get { return privateData?.PhoneNumber; } }
 
-        private PersonPrivateData privateData;
+        private PrivateData privateData;
 
         public Person(IEnumerable<IDomainEvent> events) : base(events)
         {
@@ -26,15 +26,16 @@ namespace Core.Person
 
         private Person(PersonId personId, string firstName, string lastName)
         {
-            privateData = PersonPrivateData.Create(personId, firstName, lastName);
-            PersonPrivateDataId = privateData.Id;
+            privateData = PrivateData.Create(personId, firstName, lastName);
+            PrivateDataId = privateData.Id;
         }
 
         public static Person CreateNewPerson(string firstName, string lastName)
         {
             var personId = new PersonId();
             var person = new Person(personId, firstName, lastName);
-            person.Apply(new PersonCreated(personId.ToString(), person.PersonPrivateDataId.ToString()));
+            person.Apply(new PersonCreated(personId.ToString()));
+            person.Apply(new PrivateDataAdded(person.PrivateDataId.ToString()));
             return person;
         }
 
@@ -52,16 +53,16 @@ namespace Core.Person
 
         public void DeletePerson(string reason)
         {
-            privateData?.PrepareDelete();
+            Apply(new PrivateDataRemoved());
             Apply(new PersonDeleted(reason));
         }
 
         public void ApplyPrivateDataEvents(IEnumerable<IDomainEvent> events)
         {
-            privateData = new PersonPrivateData(events);
+            privateData = new PrivateData(events);
         }
 
-        public PersonPrivateData GetPrivateData()
+        public PrivateData GetPrivateData()
         {
             return privateData;
         }
@@ -69,13 +70,22 @@ namespace Core.Person
         public void On(PersonCreated evt)
         {
             Id = new PersonId(evt.PersonId);
-            PersonPrivateDataId = new PersonPrivateDataId(evt.PersonPrivateDataId);
+        }
+
+        public void On(PrivateDataAdded evt)
+        {
+            PrivateDataId = new PrivateDataId(evt.PrivateDataId);
+        }
+
+        public void On(PrivateDataRemoved evt)
+        {
+            PrivateDataId = null;
+            privateData = null;
         }
 
         public void On(PersonDeleted evt)
         {
             DeleteReason = evt.Reason;
-            privateData = null;
         }
     }
 }

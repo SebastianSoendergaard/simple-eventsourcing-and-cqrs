@@ -146,6 +146,7 @@ namespace Infrastructure.EventStore
             }
 
             var events = lines
+                .Where(l => !string.IsNullOrWhiteSpace(l))
                 .Select(l =>
                 {
                     var parts = l.Split(';');

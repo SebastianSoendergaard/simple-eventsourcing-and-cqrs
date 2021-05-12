@@ -3,16 +3,16 @@ using Framework.DDD;
 
 namespace Core.Person
 {
-    public class PersonPrivateDataId : EntityId
+    public class PrivateDataId : EntityId
     {
         private Guid _guid;
 
-        public PersonPrivateDataId()
+        public PrivateDataId()
         {
             _guid = Guid.NewGuid();
         }
 
-        public PersonPrivateDataId(string id)
+        public PrivateDataId(string id)
         {
             _guid = Guid.Parse(id);
         }

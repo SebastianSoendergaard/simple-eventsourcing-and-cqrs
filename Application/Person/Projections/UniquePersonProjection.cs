@@ -52,20 +52,15 @@ namespace Application.Person.Projections
             eventFetcher = Task.Run(async () =>
             {
                 int expectedCount = 5; // This number should be much larger, but use small number here to make it possible to follow the mechanisms of the fetching
-                var events = await eventPublisher.GetEventsByEventNamesAsync(lastHandledIndex + 1, expectedCount, typeof(PersonPrivateDataCreated).Name, typeof(PersonDeleted).Name);
-                foreach (var evt in events)
+                int actualCount = expectedCount;
+                while (actualCount == expectedCount)
                 {
-                    HandleStoredEvent(evt);
-                }
-
-                return events.Count == expectedCount;
-            })
-            .ContinueWith(async hasMore => 
-            {
-                if (await hasMore)
-                {
-                    await Task.Delay(1000); 
-                    StartEventFetching();
+                    var events = await eventPublisher.GetEventsByEventNamesAsync(lastHandledIndex + 1, expectedCount, typeof(PrivateDataCreated).Name, typeof(PersonDeleted).Name);
+                    foreach (var evt in events)
+                    {
+                        HandleStoredEvent(evt);
+                    }
+                    actualCount = events.Count;
                 }
             });
         }
@@ -83,7 +78,7 @@ namespace Application.Person.Projections
             {
                 switch (storedEvent.Event)
                 {
-                    case PersonPrivateDataCreated evt:
+                    case PrivateDataCreated evt:
                         HandlePersonPrivateDataCreated(evt);
                         break;
                     case PersonDeleted evt:
@@ -101,13 +96,13 @@ namespace Application.Person.Projections
             lastHandledIndex = storedEvent.Index;
         }
 
-        private void HandlePersonPrivateDataCreated(PersonPrivateDataCreated evt)
+        private void HandlePersonPrivateDataCreated(PrivateDataCreated evt)
         {
             bool isUnique = false;
 
             lock (syncObj)
             {
-                isUnique = IsPersonUnique(evt.FirstName, evt.LastName);
+                isUnique = IsPersonUnique(evt.FirstName, evt.LastName, evt.PersonId);
                 if (isUnique)
                 {
                     personNames.Add(CreateName(evt.FirstName, evt.LastName), evt.PersonId);

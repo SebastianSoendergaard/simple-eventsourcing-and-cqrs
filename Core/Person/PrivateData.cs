@@ -4,34 +4,28 @@ using Framework.DDD;
 
 namespace Core.Person
 {
-    public class PersonPrivateData : Framework.DDD.EventStore.AggregateRoot<PersonPrivateDataId>
+    public class PrivateData : Framework.DDD.EventStore.AggregateRoot<PrivateDataId>
     {
-        public override PersonPrivateDataId Id { get; protected set; }
+        public override PrivateDataId Id { get; protected set; }
         public PersonId PersonId { get; private set; }
         public string FirstName { get; private set; }
         public string LastName { get; private set; }
-        public Address PersonAddress { get; private set; }
+        public Address Address { get; private set; }
         public string PhoneNumber { get; private set; }
 
-        public PersonPrivateData(IEnumerable<IDomainEvent> events) : base(events)
+        public PrivateData(IEnumerable<IDomainEvent> events) : base(events)
         {
         }
 
-        private PersonPrivateData()
+        private PrivateData()
         {
         }
 
-        public static PersonPrivateData Create(PersonId personId, string firstName, string lastName)
+        public static PrivateData Create(PersonId personId, string firstName, string lastName)
         {
-            var privateData = new PersonPrivateData();
-            privateData.Apply(new PersonPrivateDataCreated(new PersonPrivateDataId().ToString(), personId.ToString(), firstName, lastName));
+            var privateData = new PrivateData();
+            privateData.Apply(new PrivateDataCreated(personId.ToString(), new PrivateDataId().ToString(), firstName, lastName));
             return privateData;
-        }
-
-        public void PrepareDelete()
-        {
-            ChangePersonAddress("", "", "", "");
-            ChangePhoneNumber("");
         }
 
         public void ChangePersonAddress(string street, string country, string zipCode, string city)
@@ -44,9 +38,9 @@ namespace Core.Person
             Apply(new PhoneNumberChanged(PersonId.ToString(), phoneNumber));
         }
 
-        public void On(PersonPrivateDataCreated evt)
+        public void On(PrivateDataCreated evt)
         {
-            Id = new PersonPrivateDataId(evt.PersonPrivateDataId);
+            Id = new PrivateDataId(evt.PersonPrivateDataId);
             PersonId = new PersonId(evt.PersonId);
             FirstName = evt.FirstName;
             LastName = evt.LastName;
@@ -54,7 +48,7 @@ namespace Core.Person
 
         public void On(AddressChanged evt)
         {
-            PersonAddress = new Address()
+            Address = new Address()
             {
                 City = evt.City,
                 Country = evt.Country,

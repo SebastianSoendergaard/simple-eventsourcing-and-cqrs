@@ -44,7 +44,7 @@ namespace Application.Person.Projections
                 int actualCount = expectedCount;
                 while (actualCount == expectedCount)
                 {
-                    var events = await eventPublisher.GetEventsByAggregateNamesAsync(lastHandledIndex + 1, expectedCount, typeof(Core.Person.Person).Name, typeof(Core.Person.PersonPrivateData).Name);
+                    var events = await eventPublisher.GetEventsByAggregateNamesAsync(lastHandledIndex + 1, expectedCount, typeof(Core.Person.Person).Name, typeof(Core.Person.PrivateData).Name);
                     foreach (var evt in events)
                     {
                         HandleStoredEvent(evt);
@@ -64,7 +64,7 @@ namespace Application.Person.Projections
                 return;
             }
 
-            if (storedEvent.AggregateName != typeof(Core.Person.Person).Name && storedEvent.AggregateName != typeof(Core.Person.PersonPrivateData).Name)
+            if (storedEvent.AggregateName != typeof(Core.Person.Person).Name && storedEvent.AggregateName != typeof(Core.Person.PrivateData).Name)
             {
                 // Event comes from a irelevant stream
                 return;
@@ -79,8 +79,11 @@ namespace Application.Person.Projections
             {
                 switch (storedEvent.Event)
                 {
-                    case PersonPrivateDataCreated evt:
+                    case PrivateDataCreated evt:
                         HandlePersonPrivateDataCreated(evt);
+                        break;
+                    case PhoneNumberChanged evt:
+                        HandlePhoneNumberChanged(evt);
                         break;
                     case PersonDeleted evt:
                         HandlePersonDeleted(storedEvent, evt);
@@ -97,7 +100,7 @@ namespace Application.Person.Projections
             lastHandledIndex = storedEvent.Index;
         }
 
-        private void HandlePersonPrivateDataCreated(PersonPrivateDataCreated evt)
+        private void HandlePersonPrivateDataCreated(PrivateDataCreated evt)
         {
             lock (syncObj)
             {
@@ -112,13 +115,23 @@ namespace Application.Person.Projections
             }
         }
 
+        private void HandlePhoneNumberChanged(PhoneNumberChanged evt)
+        {
+            if (persons.TryGetValue(evt.PersonId, out var personListItem))
+            {
+                personListItem.PhoneNumber = evt.PhoneNumber;
+            }
+        }
+
         private void HandlePersonDeleted(StoredEvent storedEvent, PersonDeleted evt)
         {
             lock (syncObj)
             {
-                var person = persons[storedEvent.AggregateRootId];
-                person.IsDeleted = true;
-                person.DeleteReason = evt.Reason;
+                if (persons.TryGetValue(storedEvent.AggregateRootId, out var personListItem))
+                {
+                    personListItem.IsDeleted = true;
+                    personListItem.DeleteReason = evt.Reason;
+                }
             }
         }
     }
@@ -128,6 +141,7 @@ namespace Application.Person.Projections
         public string PersonId { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
+        public string PhoneNumber { get; set; }
         public bool IsDeleted { get; set; }
         public string DeleteReason { get; set; }
 

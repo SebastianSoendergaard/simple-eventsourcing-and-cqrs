@@ -2,11 +2,11 @@
 
 namespace Core.Person.DomainEvents
 {
-    public class PersonCreated : DomainEvent
+    public class PrivateDataEvent : DomainEvent
     {
         public string PersonId { get; }
 
-        public PersonCreated(string personId)
+        public PrivateDataEvent(string personId)
         {
             PersonId = personId;
         }

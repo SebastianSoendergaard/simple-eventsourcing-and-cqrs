@@ -1,15 +1,12 @@
-﻿using Core.Common.DomainEvents;
-
-namespace Core.Person.DomainEvents
+﻿namespace Core.Person.DomainEvents
 {
-    public class PhoneNumberChanged : DomainEvent
+    public class PhoneNumberChanged : PrivateDataEvent
     {
-        public string PersonId { get; }
         public string PhoneNumber { get;  }
 
         public PhoneNumberChanged(string personId, string phoneNumber)
+            : base(personId)
         {
-            PersonId = personId;
             PhoneNumber = phoneNumber;
         }
     }
